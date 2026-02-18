@@ -1,0 +1,15 @@
+active_intents:
+    - id: "INT-001"
+      name: "Implement Intent-Driven Traceability (ATS)"
+      status: "IN_PROGRESS"
+      owned_scope:
+          - "src/core/tools/**"
+          - "src/core/task/**"
+          - "src/core/prompts/**"
+          - ".orchestration/**"
+      constraints:
+          - "Must use sidecar storage in .orchestration/"
+          - "Must implement pre-hooks and post-hooks"
+      acceptance_criteria:
+          - "select_active_intent tool implemented and enforced"
+          - "agent_trace.jsonl logs all mutating actions with hashes"

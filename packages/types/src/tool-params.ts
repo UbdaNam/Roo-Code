@@ -107,3 +107,7 @@ export interface GenerateImageParams {
 	path: string
 	image?: string
 }
+
+export interface SelectActiveIntentParams {
+	intent_id: string
+}
