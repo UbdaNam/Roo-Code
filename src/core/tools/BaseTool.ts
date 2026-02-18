@@ -49,6 +49,14 @@ export abstract class BaseTool<TName extends ToolName> {
 	 */
 	abstract execute(params: ToolParams<TName>, task: Task, callbacks: ToolCallbacks): Promise<void>
 
+	protected async preExecuteHook?(params: ToolParams<TName>, task: Task): Promise<void>
+
+	protected async postExecuteHook?(
+		params: ToolParams<TName>,
+		task: Task,
+		result: { success: boolean; error?: any },
+	): Promise<void>
+
 	/**
 	 * Handle partial (streaming) tool messages.
 	 *
@@ -156,7 +164,29 @@ export abstract class BaseTool<TName extends ToolName> {
 			return
 		}
 
-		// Execute with typed parameters
-		await this.execute(params, task, callbacks)
+		// Pre-hook for ATS (Intent Traceability)
+		// Enforce Gatekeeper: select_active_intent must be called first
+		if (this.name !== ("select_active_intent" as any) && !(task as any).activeIntentId) {
+			const errorMessage =
+				"Gatekeeper Violation: You must cite a valid active Intent ID using `select_active_intent` before executing any other tool."
+			await callbacks.handleError(`executing ${this.name}`, new Error(errorMessage))
+			return
+		}
+
+		if (this.preExecuteHook) {
+			await this.preExecuteHook(params, task)
+		}
+
+		let success = false
+		try {
+			// Execute with typed parameters
+			await this.execute(params, task, callbacks)
+			success = true
+		} finally {
+			// Post-hook for ATS (Intent Traceability)
+			if (this.postExecuteHook) {
+				await this.postExecuteHook(params, task, { success })
+			}
+		}
 	}
 }

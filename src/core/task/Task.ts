@@ -169,6 +169,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 	readonly instanceId: string
 	readonly metadata: TaskMetadata
+	activeIntentId?: string
+	activeIntent?: any
 
 	todoList?: TodoItem[]
 

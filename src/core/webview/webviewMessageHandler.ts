@@ -62,6 +62,7 @@ import { openMention } from "../mentions"
 import { resolveImageMentions } from "../mentions/resolveImageMentions"
 import { RooIgnoreController } from "../ignore/RooIgnoreController"
 import { getWorkspacePath } from "../../utils/path"
+import { selectActiveIntent } from "../../hooks/intent"
 import { Mode, defaultModeSlug } from "../../shared/modes"
 import { getModels, flushModels } from "../../api/providers/fetchers/modelCache"
 import { GetModelsOptions } from "../../shared/api"
@@ -1731,6 +1732,25 @@ export const webviewMessageHandler = async (
 				})
 			}
 
+			break
+		}
+		case "select_active_intent": {
+			try {
+				const intentId = message.payload?.intentId || message.intentId || message.text
+				if (!intentId) throw new Error("You must cite a valid active Intent ID.")
+				const result = await selectActiveIntent(String(intentId))
+				await provider.postMessageToWebview({
+					type: "selectActiveIntentResult",
+					requestId: message.requestId,
+					result,
+				})
+			} catch (error) {
+				await provider.postMessageToWebview({
+					type: "selectActiveIntentResult",
+					requestId: message.requestId,
+					error: error instanceof Error ? error.message : String(error),
+				})
+			}
 			break
 		}
 		case "saveApiConfiguration":
