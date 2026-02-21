@@ -1736,13 +1736,14 @@ export const webviewMessageHandler = async (
 		}
 		case "select_active_intent": {
 			try {
-				const intentId = message.payload?.intentId || message.intentId || message.text
+				const payload = message.payload as { intentId?: string }
+				const intentId = payload?.intentId || message.text
 				if (!intentId) throw new Error("You must cite a valid active Intent ID.")
 				const result = await selectActiveIntent(String(intentId))
 				await provider.postMessageToWebview({
 					type: "selectActiveIntentResult",
 					requestId: message.requestId,
-					result,
+					text: result,
 				})
 			} catch (error) {
 				await provider.postMessageToWebview({

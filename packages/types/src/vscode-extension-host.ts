@@ -103,6 +103,7 @@ export interface ExtensionMessage {
 		| "branchWorktreeIncludeResult"
 		| "folderSelected"
 		| "skills"
+		| "selectActiveIntentResult"
 	text?: string
 	payload?: any // eslint-disable-line @typescript-eslint/no-explicit-any
 	checkpointWarning?: {
@@ -156,6 +157,7 @@ export interface ExtensionMessage {
 	error?: string
 	setting?: string
 	value?: any // eslint-disable-line @typescript-eslint/no-explicit-any
+	result?: any // For selectActiveIntentResult
 	hasContent?: boolean
 	items?: MarketplaceItem[]
 	userInfo?: CloudUserInfo
@@ -447,6 +449,7 @@ export interface WebviewMessage {
 		| "openMention"
 		| "cancelTask"
 		| "cancelAutoApproval"
+		| "select_active_intent"
 		| "updateVSCodeSetting"
 		| "getVSCodeSetting"
 		| "vsCodeSetting"
@@ -575,6 +578,7 @@ export interface WebviewMessage {
 		| "moveSkill"
 		| "updateSkillModes"
 		| "openSkillFile"
+		| "selectActiveIntentResult"
 	text?: string
 	editedMessageContent?: string
 	tab?: "settings" | "history" | "mcp" | "modes" | "chat" | "marketplace" | "cloud"
@@ -723,6 +727,10 @@ export type InstallMarketplaceItemWithParametersPayload = z.infer<
 	typeof installMarketplaceItemWithParametersPayloadSchema
 >
 
+export interface SelectActiveIntentPayload {
+	intentId: string
+}
+
 export type WebViewMessagePayload =
 	| CheckpointDiffPayload
 	| CheckpointRestorePayload
@@ -731,6 +739,7 @@ export type WebViewMessagePayload =
 	| InstallMarketplaceItemWithParametersPayload
 	| UpdateTodoListPayload
 	| EditQueuedMessagePayload
+	| SelectActiveIntentPayload
 
 export interface IndexingStatus {
 	systemStatus: string

@@ -120,6 +120,12 @@ export class ApplyDiffTool extends BaseTool<"apply_diff"> {
 			task.consecutiveMistakeCount = 0
 			task.consecutiveMistakeCountForApplyDiff.delete(relPath)
 
+			// Add content hashing for agent tracing
+			const { AgentTracer } = await import("../agent-tracing/AgentTracer")
+			const tracer = new AgentTracer()
+			const contentHash = tracer.createContentHash(diffResult.content)
+			const diffHash = tracer.createContentHash(diffContent)
+
 			// Generate backend-unified diff for display in chat/webview
 			const unifiedPatchRaw = formatResponse.createPrettyPatch(relPath, originalContent, diffResult.content)
 			const unifiedPatch = sanitizeUnifiedDiff(unifiedPatchRaw)

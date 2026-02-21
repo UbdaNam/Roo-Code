@@ -37,6 +37,7 @@ export function validateToolUse(
 	toolParams?: Record<string, unknown>,
 	experiments?: Record<string, boolean>,
 	includedTools?: string[],
+	task?: { activeIntentId?: string; activeIntent?: any }, // Task context for intent-aware validation
 ): void {
 	// First, check if the tool name is actually a valid/known tool
 	// This catches completely invalid tool names like "edit_file" that don't exist
@@ -56,6 +57,7 @@ export function validateToolUse(
 			toolParams,
 			experiments,
 			includedTools,
+			task,
 		)
 	) {
 		throw new Error(`Tool "${toolName}" is not allowed in ${mode} mode.`)
@@ -125,7 +127,23 @@ export function isToolAllowedForMode(
 	toolParams?: Record<string, any>, // All tool parameters
 	experiments?: Record<string, boolean>,
 	includedTools?: string[], // Opt-in tools explicitly included (e.g., from modelInfo)
+	task?: { activeIntentId?: string; activeIntent?: any }, // Task context for intent-aware validation
 ): boolean {
+	// Allow read tools to access orchestration files when checking active intents
+	// This enables tools like read_file to access .orchestration/active_intents.yaml
+	// for context-aware operations without being restricted by file permissions
+	const readTools = ["read_file", "search_files", "list_files", "codebase_search"]
+	const filePath = toolParams?.path || toolParams?.file_path
+
+	if (readTools.includes(tool) && filePath && typeof filePath === "string") {
+		// Check if this is accessing orchestration files
+		const isOrchestrationFile = filePath.includes(".orchestration") || filePath.includes("active_intents")
+
+		// Allow access to orchestration files for intent checking
+		if (isOrchestrationFile) {
+			return true
+		}
+	}
 	// Resolve alias to canonical name (e.g., "search_and_replace" → "edit")
 	const resolvedTool = TOOL_ALIASES[tool] ?? tool
 	const resolvedIncludedTools = includedTools?.map((t) => TOOL_ALIASES[t] ?? t)
