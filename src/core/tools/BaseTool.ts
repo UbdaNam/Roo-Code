@@ -2,6 +2,7 @@ import type { ToolName } from "@roo-code/types"
 
 import { Task } from "../task/Task"
 import type { ToolUse, HandleError, PushToolResult, AskApproval, NativeToolArgs } from "../../shared/tools"
+import { HookEngine } from "../../hooks/HookEngine"
 
 /**
  * Callbacks passed to tool execution
@@ -56,6 +57,21 @@ export abstract class BaseTool<TName extends ToolName> {
 		task: Task,
 		result: { success: boolean; error?: any },
 	): Promise<void>
+
+	// Agent Tracing hooks
+	private async agentTracePreHook(params: ToolParams<TName>, task: Task): Promise<void> {
+		const { agentTracePreHook } = await import("../agent-tracing/AgentTracer")
+		await agentTracePreHook(this.name, params as any, task)
+	}
+
+	private async agentTracePostHook(
+		params: ToolParams<TName>,
+		task: Task,
+		result: { success: boolean; error?: any },
+	): Promise<void> {
+		const { agentTracePostHook } = await import("../agent-tracing/AgentTracer")
+		await agentTracePostHook(this.name, params as any, task, result)
+	}
 
 	/**
 	 * Handle partial (streaming) tool messages.
@@ -164,13 +180,31 @@ export abstract class BaseTool<TName extends ToolName> {
 			return
 		}
 
-		// Pre-hook for ATS (Intent Traceability)
-		// Enforce Gatekeeper: select_active_intent must be called first
-		if (this.name !== ("select_active_intent" as any) && !(task as any).activeIntentId) {
-			const errorMessage =
-				"Gatekeeper Violation: You must cite a valid active Intent ID using `select_active_intent` before executing any other tool."
-			await callbacks.handleError(`executing ${this.name}`, new Error(errorMessage))
+		// Hook Engine Middleware - PreToolUse interception
+		const hookEngine = HookEngine.getInstance(task.workspacePath)
+		const toolUseBlock: ToolUse<TName> = {
+			type: "tool_use",
+			name: this.name,
+			nativeArgs: params,
+			params: {}, // Empty params since we're using nativeArgs
+			partial: false,
+		}
+
+		// Get user prompt from task metadata for auto intent selection
+		const userPrompt = task.metadata?.task
+		const preHookResult = await hookEngine.preToolUse(task, toolUseBlock, userPrompt)
+
+		if (!preHookResult.shouldContinue) {
+			if (preHookResult.injectedContext) {
+				await callbacks.pushToolResult(preHookResult.injectedContext)
+			}
 			return
+		}
+
+		// Inject additional context if provided by hook
+		if (preHookResult.injectedContext) {
+			// In a real implementation, this would be injected into the LLM prompt
+			console.log("Injected context:", preHookResult.injectedContext)
 		}
 
 		if (this.preExecuteHook) {
@@ -178,14 +212,30 @@ export abstract class BaseTool<TName extends ToolName> {
 		}
 
 		let success = false
+		let error: any = undefined
 		try {
 			// Execute with typed parameters
 			await this.execute(params, task, callbacks)
 			success = true
+		} catch (err) {
+			error = err
+			success = false
+			throw err
 		} finally {
+			// Hook Engine Middleware - PostToolUse interception
+			const toolUseBlock: ToolUse<TName> = {
+				type: "tool_use",
+				name: this.name,
+				nativeArgs: params,
+				params: {},
+				partial: false,
+			}
+
+			await hookEngine.postToolUse(task, toolUseBlock, { success, error })
+
 			// Post-hook for ATS (Intent Traceability)
 			if (this.postExecuteHook) {
-				await this.postExecuteHook(params, task, { success })
+				await this.postExecuteHook(params, task, { success, error })
 			}
 		}
 	}

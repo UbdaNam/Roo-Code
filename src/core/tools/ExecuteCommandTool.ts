@@ -55,6 +55,11 @@ export class ExecuteCommandTool extends BaseTool<"execute_command"> {
 
 			task.consecutiveMistakeCount = 0
 
+			// Add command tracing for agent tracing
+			const { AgentTracer } = await import("../agent-tracing/AgentTracer")
+			const tracer = new AgentTracer()
+			tracer.startTiming()
+
 			const didApprove = await askApproval("command", canonicalCommand)
 
 			if (!didApprove) {

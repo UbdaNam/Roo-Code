@@ -173,6 +173,11 @@ export class WriteToFileTool extends BaseTool<"write_to_file"> {
 				await task.fileContextTracker.trackFileContext(relPath, "roo_edited" as RecordSource)
 			}
 
+			// Add content hashing for agent tracing
+			const { AgentTracer } = await import("../agent-tracing/AgentTracer")
+			const tracer = new AgentTracer()
+			const contentHash = tracer.createContentHash(newContent)
+
 			task.didEditFile = true
 
 			const message = await task.diffViewProvider.pushToolWriteResult(task, task.cwd, !fileExists)
