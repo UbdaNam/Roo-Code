@@ -3,6 +3,7 @@ import type { ToolName } from "@roo-code/types"
 import { Task } from "../task/Task"
 import type { ToolUse, HandleError, PushToolResult, AskApproval, NativeToolArgs } from "../../shared/tools"
 import { HookEngine } from "../../hooks/HookEngine"
+import { GatewayViolationError } from "../../hooks/GatewayViolationError"
 
 /**
  * Callbacks passed to tool execution
@@ -192,17 +193,27 @@ export abstract class BaseTool<TName extends ToolName> {
 
 		// Get user prompt from task metadata for auto intent selection
 		const userPrompt = task.metadata?.task
-		const preHookResult = await hookEngine.preToolUse(task, toolUseBlock, userPrompt)
+		let preHookResult: any
+		try {
+			preHookResult = await hookEngine.preToolUse(task, toolUseBlock, userPrompt)
 
-		if (!preHookResult.shouldContinue) {
-			if (preHookResult.injectedContext) {
-				await callbacks.pushToolResult(preHookResult.injectedContext)
+			if (!preHookResult.shouldContinue) {
+				if (preHookResult.injectedContext) {
+					await callbacks.pushToolResult(preHookResult.injectedContext)
+				}
+				return
 			}
-			return
+		} catch (error) {
+			if (error instanceof GatewayViolationError) {
+				// Stop agent execution and show the violation error
+				await callbacks.handleError("gatekeeper violation", error)
+				return
+			}
+			throw error
 		}
 
 		// Inject additional context if provided by hook
-		if (preHookResult.injectedContext) {
+		if (preHookResult?.injectedContext) {
 			// In a real implementation, this would be injected into the LLM prompt
 			console.log("Injected context:", preHookResult.injectedContext)
 		}

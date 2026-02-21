@@ -7,6 +7,7 @@ import { Task } from "../core/task/Task"
 import { ToolUse } from "../shared/tools"
 import { HookContext, PreHookResult, PostHookResult, IntentSpec, AgentTraceEntry } from "./types"
 import { fileExistsAtPath } from "../utils/fs"
+import { GatewayViolationError } from "./GatewayViolationError"
 
 // Simple similarity function for intent matching
 function calculateSimilarity(text1: string, text2: string): number {
@@ -103,14 +104,21 @@ export class HookEngine {
 		if (this.config.enableIntentEnforcement && !task.activeIntentId) {
 			// Try auto intent selection if user prompt is provided
 			if (userPrompt) {
-				const autoSelectResult = await this.handleAutoIntentSelection(task, userPrompt)
-				if (autoSelectResult.shouldContinue) {
-					// Auto selection successful, continue with the tool execution
-					const injectedContext = autoSelectResult.injectedContext
-					return {
-						shouldContinue: true,
-						injectedContext,
+				try {
+					const autoSelectResult = await this.handleAutoIntentSelection(task, userPrompt)
+					if (autoSelectResult.shouldContinue) {
+						// Auto selection successful, continue with the tool execution
+						const injectedContext = autoSelectResult.injectedContext
+						return {
+							shouldContinue: true,
+							injectedContext,
+						}
 					}
+				} catch (error) {
+					if (error instanceof GatewayViolationError) {
+						throw error
+					}
+					// Fall through to manual intent selection requirement
 				}
 			}
 
@@ -183,10 +191,9 @@ export class HookEngine {
 			const intent = data.active_intents?.find((i: any) => i.id === intentId)
 
 			if (!intent) {
-				return {
-					shouldContinue: false,
-					injectedContext: `Error: Intent ID '${intentId}' not found in active_intents.yaml`,
-				}
+				throw new GatewayViolationError(
+					"Gatekeeper Violation: You must cite a valid active Intent ID using `select_active_intent` before executing any other tool.",
+				)
 			}
 
 			// Query recent history for this intent
@@ -404,11 +411,9 @@ Acceptance Criteria: ${JSON.stringify(intent.acceptance_criteria, null, 2)}
 		const intentId = await this.autoSelectIntent(task, userPrompt)
 
 		if (!intentId) {
-			return {
-				shouldContinue: false,
-				injectedContext:
-					"No matching intent found for the request. Please manually select an intent using `select_active_intent`.",
-			}
+			throw new GatewayViolationError(
+				"Gatekeeper Violation: You must cite a valid active Intent ID using `select_active_intent` before executing any other tool.",
+			)
 		}
 
 		// Load the selected intent
@@ -419,10 +424,9 @@ Acceptance Criteria: ${JSON.stringify(intent.acceptance_criteria, null, 2)}
 			const intent = data.active_intents?.find((i: any) => i.id === intentId)
 
 			if (!intent) {
-				return {
-					shouldContinue: false,
-					injectedContext: `Error: Intent ID '${intentId}' not found in active_intents.yaml`,
-				}
+				throw new GatewayViolationError(
+					"Gatekeeper Violation: You must cite a valid active Intent ID using `select_active_intent` before executing any other tool.",
+				)
 			}
 
 			// Query recent history for this intent
