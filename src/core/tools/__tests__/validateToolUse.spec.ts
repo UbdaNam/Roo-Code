@@ -18,13 +18,35 @@ describe("mode-validator", () => {
 				// Code mode has all groups
 				Object.entries(TOOL_GROUPS).forEach(([_, config]) => {
 					config.tools.forEach((tool: string) => {
-						expect(isToolAllowedForMode(tool, codeMode, [])).toBe(true)
+						expect(
+							isToolAllowedForMode(
+								tool,
+								codeMode,
+								[],
+								undefined,
+								undefined,
+								undefined,
+								undefined,
+								undefined,
+							),
+						).toBe(true)
 					})
 				})
 			})
 
 			it("disallows unknown tools", () => {
-				expect(isToolAllowedForMode("unknown_tool" as any, codeMode, [])).toBe(false)
+				expect(
+					isToolAllowedForMode(
+						"unknown_tool" as any,
+						codeMode,
+						[],
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(false)
 			})
 		})
 
@@ -33,7 +55,18 @@ describe("mode-validator", () => {
 				// Architect mode has read and mcp groups
 				const architectTools = [...TOOL_GROUPS.read.tools, ...TOOL_GROUPS.mcp.tools]
 				architectTools.forEach((tool) => {
-					expect(isToolAllowedForMode(tool, architectMode, [])).toBe(true)
+					expect(
+						isToolAllowedForMode(
+							tool,
+							architectMode,
+							[],
+							undefined,
+							undefined,
+							undefined,
+							undefined,
+							undefined,
+						),
+					).toBe(true)
 				})
 			})
 		})
@@ -43,7 +76,9 @@ describe("mode-validator", () => {
 				// Ask mode has read and mcp groups
 				const askTools = [...TOOL_GROUPS.read.tools, ...TOOL_GROUPS.mcp.tools]
 				askTools.forEach((tool) => {
-					expect(isToolAllowedForMode(tool, askMode, [])).toBe(true)
+					expect(
+						isToolAllowedForMode(tool, askMode, [], undefined, undefined, undefined, undefined, undefined),
+					).toBe(true)
 				})
 			})
 		})
@@ -59,10 +94,43 @@ describe("mode-validator", () => {
 					},
 				]
 				// Should allow tools from read and edit groups
-				expect(isToolAllowedForMode("read_file", "custom-mode", customModes)).toBe(true)
-				expect(isToolAllowedForMode("write_to_file", "custom-mode", customModes)).toBe(true)
+				expect(
+					isToolAllowedForMode(
+						"read_file",
+						"custom-mode",
+						customModes,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(true)
+				expect(
+					isToolAllowedForMode(
+						"write_to_file",
+						"custom-mode",
+						customModes,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(true)
 				// Should not allow tools from other groups
-				expect(isToolAllowedForMode("execute_command", "custom-mode", customModes)).toBe(false)
+				expect(
+					isToolAllowedForMode(
+						"execute_command",
+						"custom-mode",
+						customModes,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(false)
 			})
 
 			it("allows custom mode to override built-in mode", () => {
@@ -75,9 +143,31 @@ describe("mode-validator", () => {
 					},
 				]
 				// Should allow tools from read group
-				expect(isToolAllowedForMode("read_file", codeMode, customModes)).toBe(true)
+				expect(
+					isToolAllowedForMode(
+						"read_file",
+						codeMode,
+						customModes,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(true)
 				// Should not allow tools from other groups
-				expect(isToolAllowedForMode("write_to_file", codeMode, customModes)).toBe(false)
+				expect(
+					isToolAllowedForMode(
+						"write_to_file",
+						codeMode,
+						customModes,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(false)
 			})
 
 			it("respects tool requirements in custom modes", () => {
@@ -92,18 +182,62 @@ describe("mode-validator", () => {
 				const requirements = { apply_diff: false }
 
 				// Should respect disabled requirement even if tool group is allowed
-				expect(isToolAllowedForMode("apply_diff", "custom-mode", customModes, requirements)).toBe(false)
+				expect(
+					isToolAllowedForMode(
+						"apply_diff",
+						"custom-mode",
+						customModes,
+						requirements,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(false)
 
 				// Should allow other edit tools
-				expect(isToolAllowedForMode("write_to_file", "custom-mode", customModes, requirements)).toBe(true)
+				expect(
+					isToolAllowedForMode(
+						"write_to_file",
+						"custom-mode",
+						customModes,
+						requirements,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(true)
 			})
 		})
 
 		describe("dynamic MCP tools", () => {
 			it("allows dynamic MCP tools when mcp group is in mode groups", () => {
 				// Code mode has mcp group, so dynamic MCP tools should be allowed
-				expect(isToolAllowedForMode("mcp_context7_resolve-library-id", codeMode, [])).toBe(true)
-				expect(isToolAllowedForMode("mcp_serverName_toolName", codeMode, [])).toBe(true)
+				expect(
+					isToolAllowedForMode(
+						"mcp_context7_resolve-library-id",
+						codeMode,
+						[],
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(true)
+				expect(
+					isToolAllowedForMode(
+						"mcp_serverName_toolName",
+						codeMode,
+						[],
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(true)
 			})
 
 			it("disallows dynamic MCP tools when mcp group is not in mode groups", () => {
@@ -116,8 +250,30 @@ describe("mode-validator", () => {
 					},
 				]
 				// Custom mode without mcp group should not allow dynamic MCP tools
-				expect(isToolAllowedForMode("mcp_context7_resolve-library-id", "no-mcp-mode", customModes)).toBe(false)
-				expect(isToolAllowedForMode("mcp_serverName_toolName", "no-mcp-mode", customModes)).toBe(false)
+				expect(
+					isToolAllowedForMode(
+						"mcp_context7_resolve-library-id",
+						"no-mcp-mode",
+						customModes,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(false)
+				expect(
+					isToolAllowedForMode(
+						"mcp_serverName_toolName",
+						"no-mcp-mode",
+						customModes,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(false)
 			})
 
 			it("allows dynamic MCP tools in custom mode with mcp group", () => {
@@ -138,35 +294,125 @@ describe("mode-validator", () => {
 		describe("tool requirements", () => {
 			it("respects tool requirements when provided", () => {
 				const requirements = { apply_diff: false }
-				expect(isToolAllowedForMode("apply_diff", codeMode, [], requirements)).toBe(false)
+				expect(
+					isToolAllowedForMode(
+						"apply_diff",
+						codeMode,
+						[],
+						requirements,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(false)
 
 				const enabledRequirements = { apply_diff: true }
-				expect(isToolAllowedForMode("apply_diff", codeMode, [], enabledRequirements)).toBe(true)
+				expect(
+					isToolAllowedForMode(
+						"apply_diff",
+						codeMode,
+						[],
+						enabledRequirements,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(true)
 			})
 
 			it("allows tools when their requirements are not specified", () => {
 				const requirements = { some_other_tool: true }
-				expect(isToolAllowedForMode("apply_diff", codeMode, [], requirements)).toBe(true)
+				expect(
+					isToolAllowedForMode(
+						"apply_diff",
+						codeMode,
+						[],
+						requirements,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(true)
 			})
 
 			it("handles undefined and empty requirements", () => {
-				expect(isToolAllowedForMode("apply_diff", codeMode, [], undefined)).toBe(true)
-				expect(isToolAllowedForMode("apply_diff", codeMode, [], {})).toBe(true)
+				expect(
+					isToolAllowedForMode(
+						"apply_diff",
+						codeMode,
+						[],
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(true)
+				expect(
+					isToolAllowedForMode("apply_diff", codeMode, [], {}, undefined, undefined, undefined, undefined),
+				).toBe(true)
 			})
 
 			it("prioritizes requirements over mode configuration", () => {
 				const requirements = { apply_diff: false }
 				// Even in code mode which allows all tools, disabled requirement should take precedence
-				expect(isToolAllowedForMode("apply_diff", codeMode, [], requirements)).toBe(false)
+				expect(
+					isToolAllowedForMode(
+						"apply_diff",
+						codeMode,
+						[],
+						requirements,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(false)
 			})
 
 			it("prioritizes requirements over ALWAYS_AVAILABLE_TOOLS", () => {
 				// Tools in ALWAYS_AVAILABLE_TOOLS (switch_mode, new_task, etc.) should still
 				// be blockable via toolRequirements / disabledTools
 				const requirements = { switch_mode: false, new_task: false, attempt_completion: false }
-				expect(isToolAllowedForMode("switch_mode", codeMode, [], requirements)).toBe(false)
-				expect(isToolAllowedForMode("new_task", codeMode, [], requirements)).toBe(false)
-				expect(isToolAllowedForMode("attempt_completion", codeMode, [], requirements)).toBe(false)
+				expect(
+					isToolAllowedForMode(
+						"switch_mode",
+						codeMode,
+						[],
+						requirements,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(false)
+				expect(
+					isToolAllowedForMode(
+						"new_task",
+						codeMode,
+						[],
+						requirements,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(false)
+				expect(
+					isToolAllowedForMode(
+						"attempt_completion",
+						codeMode,
+						[],
+						requirements,
+						undefined,
+						undefined,
+						undefined,
+						undefined,
+					),
+				).toBe(false)
 			})
 		})
 	})
