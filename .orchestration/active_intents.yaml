@@ -1,15 +1,34 @@
 active_intents:
-    - id: "INT-001"
-      name: "Implement Intent-Driven Traceability (ATS)"
-      status: "IN_PROGRESS"
-      owned_scope:
-          - "src/core/tools/**"
-          - "src/core/task/**"
-          - "src/core/prompts/**"
-          - ".orchestration/**"
-      constraints:
-          - "Must use sidecar storage in .orchestration/"
-          - "Must implement pre-hooks and post-hooks"
-      acceptance_criteria:
-          - "select_active_intent tool implemented and enforced"
-          - "agent_trace.jsonl logs all mutating actions with hashes"
+  - id: 'INT-001'
+    name: 'Setup Python project'
+    status: 'PENDING'
+    # Formal Scope Definition (Crucial for Parallelism)
+    owned_scope:
+      - 'src**'
+    constraints:
+      - 'Must align with standard Python project structure'
+    # The "Definition of Done"
+    acceptance_criteria:
+      - 'Project structure follows best practices (e.g., src/, tests/, README.md)'
+  - id: 'INT-002'
+    name: 'Implement create sort string array util function'
+    status: 'PENDING'
+    # Formal Scope Definition (Crucial for Parallelism)
+    owned_scope:
+      - 'src/utils*'
+    constraints:
+      - 'Must not use external libraries for sorting'
+    # The "Definition of Done"
+    acceptance_criteria:
+      - 'Function correctly sorts an array of strings in ascending order'
+  - id: 'INT-003'
+    name: 'Implement axios instance for api calls'
+    status: 'PENDING'
+    # Formal Scope Definition (Crucial for Parallelism)
+    owned_scope:
+      - 'src/utils*'
+    constraints:
+      - 'Must use axios for this instance creation'
+    # The "Definition of Done"
+    acceptance_criteria:
+      - 'axios instance is created with default configuration for API calls'
